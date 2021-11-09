@@ -19,7 +19,7 @@ describe("Project Contract", function () {
   });
 
   describe("invest", function() {
-    it("Should return increased balance after an investment is made", async function () {
+    it("Should increased balance after it went through successfully", async function () {
       const aContribution = parseEther("0.01");
 
       await project.invest({value : aContribution }); 
@@ -27,18 +27,33 @@ describe("Project Contract", function () {
 
     });
 
-    it("Should throw an error when investment amount lower than the minimum requirement", async function () {
+    it("Should throw an error when its amount lower than the minimum requirement", async function () {
       const smallContribution = parseEther("0.001");
 
-      await expect(project.invest({ value : smallContribution })).to.be.revertedWith('The contribute amount must be at least 0.01 ETH.');
+      await expect(project.invest({ value : smallContribution })).to.be.revertedWith('LOWER_THAN_REQUIRE_MIN');
     })
 
-    it("Should fail to invest if the goal already met", async function () {
+    it("Should fail the goal already met", async function () {
       const aLargeContribution = parseEther("20");
       const aContribution = parseEther("0.01");
 
       await project.invest({value : aLargeContribution }); 
       await expect(project.invest({ value : aContribution })).to.be.reverted;
+
+    });
+
+    it("Should fail if the project ended", async function () {
+      const aContribution = parseEther("0.01");
+
+      //invest before project ends
+      await project.invest({value : aContribution });
+      //passing 30days 
+      await network.provider.send("evm_increaseTime", [86400000 * 30]); //30days in millisecond
+      await network.provider.send("evm_mine");
+      //invest attempt after end date passes
+      await expect(project.invest({ value : aContribution })).to.be.reverted;
+      //expect only the first investment went through
+      expect(await project.balance()).to.deep.equal(aContribution);
 
     });
   });

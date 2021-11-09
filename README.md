@@ -5,7 +5,7 @@ A client hires you to build them a "kickstarter clone". They give you the follow
 
 #### TODOs
 - [X] Create Project contract constructor
-- [] Implement status
+- [X] Implement status
 - [X] Implement invest function
 - [] Implement reward function
 - [] Impelemnt refund function

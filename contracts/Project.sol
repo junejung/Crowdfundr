@@ -28,12 +28,18 @@ contract Project {
     }
 
     function invest() external inStatus(Status.INPROGRESS) payable {
-        require(msg.value >= minAmount, 'The contribute amount must be at least 0.01 ETH.');
-        
+        require(msg.value >= minAmount, 'LOWER_THAN_REQUIRE_MIN');
+        updateStatus();
+
         balance = balance +=msg.value;
-        if(balance >= goalAmount) {
-            status = Status.SUCCESS;
-        }
+        updateStatus();
     }
 
+    function updateStatus() internal inStatus(Status.INPROGRESS) {
+        if (balance >= goalAmount) {
+            status = Status.SUCCESS;
+        } else if (block.timestamp > endDate) {
+            status = Status.FAIL;
+        }
+    }
 }

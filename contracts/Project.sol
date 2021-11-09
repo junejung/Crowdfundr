@@ -23,7 +23,12 @@ contract Project {
     }
 
     modifier inStatus(Status _status) {
-        require(status == _status);
+        require(status == _status, 'INVALID_STATUS');
+        _;
+    }
+
+    modifier restricted() {
+        require(msg.sender == owner, 'NOT_OWNER');
         _;
     }
 
@@ -41,5 +46,15 @@ contract Project {
         } else if (block.timestamp > endDate) {
             status = Status.FAIL;
         }
+    }
+
+    function withdraw(uint _requestAmount) external inStatus(Status.SUCCESS) restricted payable {
+        transfer(payable(msg.sender), _requestAmount);
+        balance = balance - _requestAmount;
+    }
+
+    function transfer(address payable _to, uint _amount) internal {
+        (bool success, ) = _to.call{value: _amount}("");
+        require(success, "TRANSFER_FAILED");
     }
 }

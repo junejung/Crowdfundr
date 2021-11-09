@@ -4,10 +4,9 @@ const { expect, should } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("Project Contract", function () {
-  
   beforeEach( async function() {
     Project = await ethers.getContractFactory("Project");
-    [addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+    [owner, addr2, addr3, ...addrs] = await ethers.getSigners();
     project = await Project.deploy(20);
 
     await project.deployed();
@@ -50,11 +49,33 @@ describe("Project Contract", function () {
       //passing 30days 
       await network.provider.send("evm_increaseTime", [86400000 * 30]); //30days in millisecond
       await network.provider.send("evm_mine");
-      //invest attempt after end date passes
+      //expect failing the invest attempt after end date passes
       await expect(project.invest({ value : aContribution })).to.be.reverted;
       //expect only the first investment went through
       expect(await project.balance()).to.deep.equal(aContribution);
 
     });
   });
+
+  describe("withdraw", function() {
+
+    it("Should fail when withdraw isn't the owner of the project", async function () {
+      const goalAmountContribution = parseEther("20");
+
+      await project.invest({value : goalAmountContribution });
+      await expect(project.connect(addr2).withdraw(goalAmountContribution)).to.be.revertedWith('NOT_OWNER');
+      expect(await project.balance()).to.deep.equal(goalAmountContribution);
+    });
+
+    it("Should be successful when the owner of project request it after project is successful", async function () {
+      const goalAmountContribution = parseEther("20");
+      await project.invest({value : goalAmountContribution });
+
+      let balanceBefore = await hre.ethers.provider.getBalance(owner.address);
+      let totalFunds = await project.balance();
+      await project.connect(owner).withdraw(goalAmountContribution);
+      let balanceAfter = await hre.ethers.provider.getBalance(owner.address);
+      expect(Number(balanceBefore) < Number(balanceAfter)).to.deep.equal(true);
+    });
+  })
 });

@@ -9,7 +9,7 @@ A client hires you to build them a "kickstarter clone". They give you the follow
 - [X] Implement invest function
 - [] Implement reward function
 - [] Impelemnt refund function
-- [] Impelemnt withdraw function
+- [X] Impelemnt withdraw function
 
 ### Structure
 **Project Contract**
@@ -19,7 +19,7 @@ A client hires you to build them a "kickstarter clone". They give you the follow
 | Goal Amount | uint | 0.00 ETH |
 | Minimum Amount | uint | 0.01 ETH |
 | End Date | uint | 30day |
-| Status | Status | InProgress, FAIL, SUCCESS |
+| Status | Status | INPROGRESS, FAIL, SUCCESS |
 | Balance | uint | 0.00 ETH |
 
 Functions

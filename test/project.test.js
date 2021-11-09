@@ -38,7 +38,7 @@ describe("Project Contract", function () {
       const aContribution = parseEther("0.01");
 
       await project.invest({value : aLargeContribution }); 
-      await expect(project.invest({ value : aContribution })).to.be.revertedWith('The goal alreay met.');
+      await expect(project.invest({ value : aContribution })).to.be.reverted;
 
     });
   });

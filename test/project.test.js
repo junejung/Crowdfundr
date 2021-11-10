@@ -47,13 +47,20 @@ describe("Project Contract", function () {
       //invest before project ends
       await project.invest({value : aContribution });
       //passing 30days 
-      await network.provider.send("evm_increaseTime", [86400000 * 30]); //30days in millisecond
+      await network.provider.send("evm_increaseTime", [86400000 * 30]); //30 days in millisecond
       await network.provider.send("evm_mine");
       //expect failing the invest attempt after end date passes
       await expect(project.invest({ value : aContribution })).to.be.reverted;
       //expect only the first investment went through
       expect(await project.balance()).to.deep.equal(aContribution);
 
+    });
+
+    it("Should fail if the project cancelled", async function () {
+      const aContribution = parseEther("0.01");
+
+      await project.connect(owner).cancel();
+      await expect(project.connect(addr2).invest({ value : aContribution })).to.be.reverted;
     });
   });
 
@@ -80,13 +87,13 @@ describe("Project Contract", function () {
 
   describe("refund", function() {
 
-    it("Should be sccessful when project is failed or cancelled", async function() {
+    it("Should be sccessful when project is failed", async function() {
       const aContribution = parseEther("15");
       await project.connect(addr2).invest({value : aContribution });
 
       let balanceBefore = await hre.ethers.provider.getBalance(addr2.address);
 
-      await network.provider.send("evm_increaseTime", [86400000 * 31]); //31days in millisecond
+      await network.provider.send("evm_increaseTime", [86400000 * 31]); //31 days in millisecond
       await network.provider.send("evm_mine");
 
       await project.connect(addr2).refund();
@@ -94,5 +101,48 @@ describe("Project Contract", function () {
       expect(Number(balanceBefore) < Number(balanceAfter)).to.deep.equal(true);
 
     });
+
+    it("Should be sccessful when project is cancelled", async function() {
+      const aContribution = parseEther("15");
+      await project.connect(addr2).invest({value : aContribution });
+
+      let balanceBefore = await hre.ethers.provider.getBalance(addr2.address);
+
+      await project.connect(owner).cancel();
+
+      await project.connect(addr2).refund();
+      let balanceAfter = await hre.ethers.provider.getBalance(addr2.address);
+      expect(Number(balanceBefore) < Number(balanceAfter)).to.deep.equal(true);
+
+    });
+  });
+
+  describe("cancel", function() {
+
+    it("Should be sccessful when the owner of project request before end of the project deadline", async function() {
+      const aContribution = parseEther("15");
+      await project.connect(addr2).invest({value : aContribution });
+
+      let cancelation = await project.connect(owner).cancel();
+      expect(cancelation).to.emit(project, 'CancelProject').withArgs(owner.address);
+    });
+
+    it("Should fail when owner request it after deadline passed", async function() {
+      const aContribution = parseEther("15");
+      await project.connect(addr2).invest({value : aContribution });
+
+      await network.provider.send("evm_increaseTime", [86400000 * 31]); //31days in millisecond
+      await network.provider.send("evm_mine");
+
+      await expect(project.connect(owner).cancel()).to.be.revertedWith('PROJECT_EXPIRED');
+    });
+
+    it("Should fail when other than the owner request it", async function() {
+      const aContribution = parseEther("15");
+      await project.connect(addr2).invest({value : aContribution });
+
+      await expect(project.connect(addr2).cancel()).to.be.revertedWith('NOT_OWNER');
+    });
+
   });
 });

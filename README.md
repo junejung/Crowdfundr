@@ -33,7 +33,7 @@ A client hires you to build them a "kickstarter clone". They give you the follow
 - [] Implement reward function
 - [X] Implement refund function
 - [X] Implement withdraw function
-- [] Implement cancel function
+- [X] Implement cancel function
 
 ### Structure
 **Project Contract**

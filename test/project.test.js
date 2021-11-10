@@ -7,7 +7,7 @@ describe("Project Contract", function () {
   beforeEach( async function() {
     Project = await ethers.getContractFactory("Project");
     [owner, addr2, addr3, ...addrs] = await ethers.getSigners();
-    project = await Project.deploy(20);
+    project = await Project.deploy(parseEther("20"));
 
     await project.deployed();
   });
@@ -32,7 +32,7 @@ describe("Project Contract", function () {
       await expect(project.invest({ value : smallContribution })).to.be.revertedWith('LOWER_THAN_REQUIRE_MIN');
     })
 
-    it("Should fail the goal already met", async function () {
+    it("Should fail when the goal already met", async function () {
       const aLargeContribution = parseEther("20");
       const aContribution = parseEther("0.01");
 
@@ -72,10 +72,27 @@ describe("Project Contract", function () {
       await project.invest({value : goalAmountContribution });
 
       let balanceBefore = await hre.ethers.provider.getBalance(owner.address);
-      let totalFunds = await project.balance();
       await project.connect(owner).withdraw(goalAmountContribution);
       let balanceAfter = await hre.ethers.provider.getBalance(owner.address);
       expect(Number(balanceBefore) < Number(balanceAfter)).to.deep.equal(true);
     });
-  })
+  });
+
+  describe("refund", function() {
+
+    it("Should be sccessful when project is failed or cancelled", async function() {
+      const aContribution = parseEther("15");
+      await project.connect(addr2).invest({value : aContribution });
+
+      let balanceBefore = await hre.ethers.provider.getBalance(addr2.address);
+
+      await network.provider.send("evm_increaseTime", [86400000 * 31]); //31days in millisecond
+      await network.provider.send("evm_mine");
+
+      await project.connect(addr2).refund();
+      let balanceAfter = await hre.ethers.provider.getBalance(addr2.address);
+      expect(Number(balanceBefore) < Number(balanceAfter)).to.deep.equal(true);
+
+    });
+  });
 });

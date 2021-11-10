@@ -4,14 +4,14 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 
 contract Project {
-    enum Status { INPROGRESS, SUCCESS, FAIL }
-
     address public owner;
     uint public goalAmount;
     uint public minAmount;
     uint256 public balance;
     uint public endDate;
-    Status public status;
+    bool public goalMet;
+
+    mapping (address => uint) public contributions;
 
     constructor(uint _goalAmount) {
         owner = msg.sender;
@@ -19,11 +19,11 @@ contract Project {
         minAmount = 0.01 ether;
         balance = 0.00 ether;
         endDate = block.timestamp + 30 days;
-        status = Status.INPROGRESS;
+        goalMet = false;
     }
 
-    modifier inStatus(Status _status) {
-        require(status == _status, 'INVALID_STATUS');
+    modifier achieved(bool _expected) {
+        require(goalMet == _expected, 'PROJECT_STATUS_MISMATCH');
         _;
     }
 
@@ -32,29 +32,37 @@ contract Project {
         _;
     }
 
-    function invest() external inStatus(Status.INPROGRESS) payable {
-        require(msg.value >= minAmount, 'LOWER_THAN_REQUIRE_MIN');
-        updateStatus();
-
-        balance = balance +=msg.value;
-        updateStatus();
+    modifier expired(bool _expected) {
+        if (_expected) {
+            require(block.timestamp >= endDate, 'PROJECT_STILL_IN_PROGRESS');
+        } else {
+            require(block.timestamp <= endDate, 'PROJECT_EXPIRED');
+        }
+        _;
     }
 
-    function updateStatus() internal inStatus(Status.INPROGRESS) {
+    function invest() external achieved(false) expired(false) payable {
+        require(msg.value >= minAmount, 'LOWER_THAN_REQUIRE_MIN');
+
+        balance += msg.value;
+        contributions[msg.sender] += msg.value;
+        //check to reword contributors
         if (balance >= goalAmount) {
-            status = Status.SUCCESS;
-        } else if (block.timestamp > endDate) {
-            status = Status.FAIL;
+            goalMet = true;
         }
     }
 
-    function withdraw(uint _requestAmount) external inStatus(Status.SUCCESS) restricted payable {
-        transfer(payable(msg.sender), _requestAmount);
+    function withdraw(uint _requestAmount) external achieved(true) restricted payable {
+        payable(msg.sender).transfer(_requestAmount);
         balance = balance - _requestAmount;
     }
 
-    function transfer(address payable _to, uint _amount) internal {
-        (bool success, ) = _to.call{value: _amount}("");
-        require(success, "TRANSFER_FAILED");
+    function refund() external achieved(false) expired(true) payable {
+        require(contributions[msg.sender] > 0, 'NON_SUFFICIENT_FUNDS');
+
+        uint amountToRefund = contributions[msg.sender];
+        payable(msg.sender).transfer(amountToRefund);
+        balance -= amountToRefund;
+        contributions[msg.sender] = 0;
     }
 }

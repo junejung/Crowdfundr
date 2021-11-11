@@ -30,10 +30,13 @@ A client hires you to build them a "kickstarter clone". They give you the follow
 - [X] Create Project contract constructor
 - [X] Implement status
 - [X] Implement invest function
-- [] Implement reward function
+- [X] Implement reward function
 - [X] Implement refund function
 - [X] Implement withdraw function
 - [X] Implement cancel function
+- [] Creat factory contract
+- [] Refactor source and test code
+- [] Add how to in readme
 
 ### Structure
 **Project Contract**

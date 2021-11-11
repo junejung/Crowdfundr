@@ -2,8 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-contract Project {
+contract Project is ERC721 {
+
     enum State {ONGOING, FAIL, SUCCESS}
 
     address public owner;
@@ -11,11 +13,13 @@ contract Project {
     uint public minAmount;
     uint256 public balance;
     uint public endDate;
+    uint256 private _tokenIdCounter;
     State public state;
 
     mapping (address => uint) public contributions;
+    mapping (address => uint[]) public givenNFTs;
 
-    constructor(uint _goalAmount) {
+    constructor(uint _goalAmount) ERC721("CrowdfundrReward", "NFT") {
         owner = msg.sender;
         goalAmount = _goalAmount;
         minAmount = 0.01 ether;
@@ -43,12 +47,30 @@ contract Project {
         _;
     }
 
+    function _mint(address _recipient) internal returns (uint256) {
+        _tokenIdCounter++;
+        _safeMint(_recipient, _tokenIdCounter);
+
+        return _tokenIdCounter;
+    }
+
+    function reward(address _recipient) internal inState(State.ONGOING) {
+        uint nftsToGive = (contributions[_recipient] - givenNFTs[_recipient].length) / (1 ether);
+        for (uint i; i < nftsToGive; i++) {
+            givenNFTs[_recipient].push(_mint(_recipient));
+        }
+
+        emit RewardGiven(_recipient, givenNFTs[_recipient].length);
+    }
+
     function invest() external expired(false) inState(State.ONGOING) payable {
         require(msg.value >= minAmount, 'LOWER_THAN_REQUIRE_MIN');
 
         balance += msg.value;
         contributions[msg.sender] += msg.value;
-        //check to reword contributors
+
+        reward(msg.sender);
+
         if (balance >= goalAmount) {
             state = State.SUCCESS;
         }
@@ -70,8 +92,10 @@ contract Project {
 
     function cancel() external expired(false) restricted {
         state = State.FAIL;
-        emit CancelProject(msg.sender);
+        emit projectCancelled(msg.sender);
     }
 
-    event CancelProject(address _ownerAddress);
+    event projectCancelled(address _ownerAddress);
+
+    event RewardGiven(address _recipient, uint _givenNftNO);
 }

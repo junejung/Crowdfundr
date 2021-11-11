@@ -124,7 +124,7 @@ describe("Project Contract", function () {
       await project.connect(addr2).invest({value : aContribution });
 
       let cancelation = await project.connect(owner).cancel();
-      expect(cancelation).to.emit(project, 'CancelProject').withArgs(owner.address);
+      expect(cancelation).to.emit(project, 'projectCancelled').withArgs(owner.address);
     });
 
     it("Should fail when owner request it after deadline passed", async function() {
@@ -143,6 +143,24 @@ describe("Project Contract", function () {
 
       await expect(project.connect(addr2).cancel()).to.be.revertedWith('NOT_OWNER');
     });
+  });
 
+  describe("reward", function() {
+    it("Should be given when contributor made 1ETH countribution", async function () {
+      const aNFTContributionAmount = parseEther("1");
+
+      let awardGiven = await project.connect(addr2).invest({ value : aNFTContributionAmount });
+      expect(awardGiven).to.emit(project, 'RewardGiven').withArgs(addr2.address, 1);
+    });
+
+    it("Should be given more than 1 per 1 ETH when contributor made contribution", async function () {
+      const firstContribution = parseEther("0.9");
+      const secondContribution = parseEther("2.6");
+
+      let firstInvestment = await project.connect(addr2).invest({ value : firstContribution });
+      expect(firstInvestment).to.emit(project, 'RewardGiven').withArgs(addr2.address, 0);
+      let secondInvestment = await project.connect(addr2).invest({ value : secondContribution });
+      expect(secondInvestment).to.emit(project, 'RewardGiven').withArgs(addr2.address, 3);
+    });
   });
 });

@@ -4,6 +4,25 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
+contract Crowdfundr {
+    Project[] private projects;
+
+    function createProject(uint _goal) external {
+        Project newProject = new Project(msg.sender, _goal);
+
+        address newProjectAddress = address(newProject);
+        projects.push(newProject);
+
+        emit ProjectCreated(address(newProjectAddress), msg.sender, _goal);
+    }
+
+    function getAllProjects() external view returns(Project[] memory){
+        return projects;
+    }
+
+    event ProjectCreated(address _contractAddress, address _creator, uint256 _goal);
+}
+
 contract Project is ERC721 {
 
     enum State {ONGOING, FAIL, SUCCESS}
@@ -19,9 +38,9 @@ contract Project is ERC721 {
     mapping (address => uint) public contributions;
     mapping (address => uint[]) public givenNFTs;
 
-    constructor(uint _goalAmount) ERC721("CrowdfundrReward", "NFT") {
-        owner = msg.sender;
-        goalAmount = _goalAmount;
+    constructor(address _owner, uint _goal) ERC721("CrowdfundrReward", "NFT") {
+        owner = _owner;
+        goalAmount = _goal;
         minAmount = 0.01 ether;
         balance = 0.00 ether;
         endDate = block.timestamp + 30 days;

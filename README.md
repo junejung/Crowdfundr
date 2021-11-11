@@ -34,7 +34,7 @@ A client hires you to build them a "kickstarter clone". They give you the follow
 - [X] Implement refund function
 - [X] Implement withdraw function
 - [X] Implement cancel function
-- [] Creat factory contract
+- [X] Creat factory contract
 - [] Refactor source and test code
 - [] Add how to in readme
 

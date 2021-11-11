@@ -3,11 +3,37 @@ const { parseEther } = require("@ethersproject/units");
 const { expect, should } = require("chai");
 const { ethers } = require("hardhat");
 
+
+describe("Crowdfundr Contract", function () {
+  beforeEach( async function() {
+    Crowdfundr = await ethers.getContractFactory("Crowdfundr");
+    [alex, diana, gab] = await ethers.getSigners();
+    crowdfundr = await Crowdfundr.deploy();
+    await crowdfundr.deployed();
+  });
+  it("Should be able to register multiple projects", async function () {
+    await crowdfundr.connect(alex).createProject(parseEther('20'));
+    await crowdfundr.connect(diana).createProject(parseEther('20'));
+    await crowdfundr.connect(gab).createProject(parseEther('20'));
+
+    let projects = await crowdfundr.getAllProjects();
+    expect(projects.length).to.deep.equal(3);
+  });
+
+  it("Should allow a creator to register more than one project", async function () {
+    await crowdfundr.connect(alex).createProject(parseEther('20'));
+    await crowdfundr.connect(alex).createProject(parseEther('20'));
+
+    let projects = await crowdfundr.getAllProjects();
+    expect(projects.length).to.deep.equal(2);
+  });
+})
+
 describe("Project Contract", function () {
   beforeEach( async function() {
     Project = await ethers.getContractFactory("Project");
     [owner, addr2, addr3, ...addrs] = await ethers.getSigners();
-    project = await Project.deploy(parseEther("20"));
+    project = await Project.deploy(owner.address, parseEther("20"));
 
     await project.deployed();
   });
